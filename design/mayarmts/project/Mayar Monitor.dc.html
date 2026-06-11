@@ -1,0 +1,481 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=VT323&family=JetBrains+Mono:wght@400;500;700;800&display=swap" rel="stylesheet">
+<style>
+  html,body{margin:0;padding:0;background:#04060a;}
+  *{box-sizing:border-box;}
+  ::selection{background:#2dff8a;color:#04140b;}
+  input::placeholder{color:#34473d;}
+  @keyframes heroPulse{0%,100%{text-shadow:0 0 26px rgba(150,255,200,.18);}50%{text-shadow:0 0 40px rgba(150,255,200,.30);}}
+  @keyframes blink{0%,49%{opacity:1;}50%,100%{opacity:.25;}}
+  @keyframes flicker{0%,100%{opacity:.9;}48%{opacity:.86;}50%{opacity:1;}52%{opacity:.84;}}
+  @keyframes caret{0%,49%{opacity:1;}50%,100%{opacity:0;}}
+</style>
+</helmet>
+<div style="position:relative;min-height:100vh;background:radial-gradient(140% 120% at 50% 38%, #0a1016 0%, #060a0e 55%, #04060a 100%);overflow:hidden;--acc:{{ accentColor }};">
+
+  <sc-if value="{{ scanlinesOn }}" hint-placeholder-val="{{ true }}">
+    <div style="position:fixed;inset:0;pointer-events:none;z-index:50;background:repeating-linear-gradient(0deg, rgba(0,0,0,0) 0px, rgba(0,0,0,0) 2px, rgba(0,0,0,.20) 3px);mix-blend-mode:multiply;animation:flicker 7s infinite;"></div>
+  </sc-if>
+  <div style="position:fixed;inset:0;pointer-events:none;z-index:40;background:radial-gradient(75% 55% at 50% -4%, color-mix(in srgb, var(--acc,#2dff8a) 9%, transparent), transparent 70%);"></div>
+  <div style="position:fixed;inset:0;pointer-events:none;z-index:60;background:radial-gradient(125% 120% at 50% 46%, rgba(0,0,0,0) 50%, rgba(0,0,0,.86) 100%);"></div>
+
+  <!-- ===================== SETUP ===================== -->
+  <sc-if value="{{ isSetup }}" hint-placeholder-val="{{ true }}">
+    <div style="min-height:100vh;display:flex;align-items:center;justify-content:center;padding:6vw 24px;position:relative;z-index:3;">
+      <div style="width:min(560px,100%);">
+        <div style="font-family:'JetBrains Mono',monospace;color:var(--acc,#2dff8a);letter-spacing:.4em;font-size:13px;font-weight:700;text-shadow:0 0 14px var(--acc,#2dff8a);">MAYAR</div>
+        <div style="font-family:'VT323',monospace;color:#eef8f1;font-size:clamp(42px,7.4vw,70px);line-height:.94;margin-top:14px;text-shadow:0 0 22px rgba(150,255,200,.22);">TRANSACTION<br>MONITOR<span style="display:inline-block;width:.5ch;background:var(--acc,#2dff8a);margin-left:.12em;animation:caret 1.1s step-end infinite;">&nbsp;</span></div>
+        <div style="font-family:'JetBrains Mono',monospace;color:#5f7d70;font-size:13px;margin-top:20px;letter-spacing:.04em;">// live big-screen dashboard for your Mayar account</div>
+
+        <div style="margin-top:36px;font-family:'JetBrains Mono',monospace;color:#8fae9f;font-size:11px;letter-spacing:.24em;">ENTER API KEY</div>
+        <div style="margin-top:10px;display:flex;gap:10px;align-items:stretch;">
+          <input type="{{ keyType }}" value="{{ keyInput }}" onInput="{{ onKeyInput }}" onKeyDown="{{ onKeyDown }}" placeholder="paste your secret API key" spellcheck="false" autocomplete="off" style="flex:1;min-width:0;background:#080d0b;border:1px solid #1d2f26;color:#eef8f1;font-family:'JetBrains Mono',monospace;font-size:15px;padding:14px;outline:none;letter-spacing:.04em;" />
+          <button onClick="{{ toggleShowKey }}" style="background:#080d0b;border:1px solid #1d2f26;color:#6f8d7e;font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.12em;padding:0 16px;cursor:pointer;">{{ showKeyLabel }}</button>
+        </div>
+        <sc-if value="{{ setupError }}" hint-placeholder-val="">
+          <div style="color:#ff6a6a;font-family:'JetBrains Mono',monospace;font-size:12px;margin-top:10px;letter-spacing:.03em;">! {{ setupError }}</div>
+        </sc-if>
+        <button onClick="{{ connect }}" style="margin-top:18px;width:100%;background:var(--acc,#2dff8a);color:#04140b;border:none;font-family:'JetBrains Mono',monospace;font-weight:800;font-size:14px;letter-spacing:.2em;padding:16px;cursor:pointer;box-shadow:0 0 30px color-mix(in srgb, var(--acc,#2dff8a) 42%, transparent);">CONNECT ▸</button>
+
+        <div style="margin-top:22px;display:flex;justify-content:space-between;gap:14px;flex-wrap:wrap;">
+          <a href="https://web.mayar.id/api-keys" target="_blank" rel="noopener" style="color:#5f7d70;font-family:'JetBrains Mono',monospace;font-size:11px;text-decoration:none;border-bottom:1px solid #1d2f26;padding-bottom:2px;">GET KEY → web.mayar.id/api-keys</a>
+          <button onClick="{{ useDemo }}" style="background:none;border:none;color:#8fae9f;font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.06em;cursor:pointer;text-decoration:underline;text-underline-offset:3px;">explore with demo data</button>
+        </div>
+        <div style="margin-top:28px;color:#3c4f45;font-family:'JetBrains Mono',monospace;font-size:11px;line-height:1.75;letter-spacing:.02em;">Stored only in this browser (localStorage). Sent only to api.mayar.id over HTTPS. If your browser blocks the request (CORS), use demo data or route through a small proxy.</div>
+      </div>
+    </div>
+  </sc-if>
+
+  <!-- ===================== LOADING ===================== -->
+  <sc-if value="{{ isLoading }}" hint-placeholder-val="">
+    <div style="min-height:100vh;display:flex;align-items:center;justify-content:center;position:relative;z-index:3;font-family:'VT323',monospace;color:var(--acc,#2dff8a);font-size:34px;letter-spacing:.22em;text-shadow:0 0 16px var(--acc,#2dff8a);">BOOTING<span style="display:inline-block;width:.4ch;animation:caret 1s step-end infinite;">_</span></div>
+  </sc-if>
+
+  <!-- ===================== DASHBOARD ===================== -->
+  <sc-if value="{{ isDashboard }}" hint-placeholder-val="">
+    <div style="position:relative;z-index:2;min-height:100vh;display:flex;flex-direction:column;max-width:1760px;margin:0 auto;padding:clamp(24px,3.4vw,56px) clamp(22px,3.6vw,64px);">
+
+      <!-- header -->
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:16px;">
+        <div style="display:flex;align-items:center;gap:13px;">
+          <div style="width:15px;height:15px;background:var(--acc,#2dff8a);box-shadow:0 0 16px var(--acc,#2dff8a);"></div>
+          <span style="font-family:'JetBrains Mono',monospace;color:#eef8f1;letter-spacing:.36em;font-size:clamp(13px,1.1vw,17px);font-weight:700;">MAYAR</span>
+        </div>
+        <div style="text-align:right;font-family:'JetBrains Mono',monospace;color:#6f8d7e;font-size:clamp(11px,.92vw,14px);letter-spacing:.18em;">
+          <div>{{ headerDate }}</div>
+          <div style="color:#3c4f45;margin-top:5px;">TRANSACTION MONITOR</div>
+        </div>
+      </div>
+
+      <!-- hero -->
+      <div style="margin-top:clamp(26px,3.2vw,52px);">
+        <div style="display:flex;justify-content:space-between;align-items:flex-end;gap:16px;">
+          <span style="font-family:'JetBrains Mono',monospace;color:#6f8d7e;font-size:clamp(11px,.98vw,16px);letter-spacing:.24em;text-transform:uppercase;">Transaction Volume · Lifetime</span>
+          <span style="display:inline-flex;align-items:center;gap:9px;font-family:'JetBrains Mono',monospace;font-size:clamp(11px,.96vw,15px);letter-spacing:.22em;color:{{ statusColor }};white-space:nowrap;">
+            <span style="width:9px;height:9px;border-radius:50%;background:{{ statusColor }};box-shadow:0 0 12px {{ statusColor }};animation:blink 1.5s step-end infinite;"></span>{{ statusLabel }} <span style="border:1px solid {{ statusColor }};border-radius:2px;padding:0 3px;font-size:.72em;opacity:.7;">i</span>
+          </span>
+        </div>
+        <div style="font-family:'VT323',monospace;color:#f4fbf6;font-size:clamp(40px,8.3vw,158px);line-height:.92;letter-spacing:.005em;margin-top:8px;white-space:nowrap;animation:heroPulse 4.6s ease-in-out infinite;">{{ heroVolume }}</div>
+      </div>
+
+      <!-- grid -->
+      <div style="margin-top:clamp(30px,3.6vw,60px);display:grid;grid-template-columns:repeat(auto-fit,minmax(330px,1fr));gap:clamp(28px,3.6vw,72px);align-items:start;flex:1;">
+
+        <!-- left column -->
+        <div style="display:flex;flex-direction:column;gap:clamp(22px,2.6vw,42px);">
+          <div>
+            <div style="font-family:'JetBrains Mono',monospace;color:#6f8d7e;font-size:clamp(11px,.92vw,15px);letter-spacing:.22em;text-transform:uppercase;">Total Transactions</div>
+            <div style="font-family:'VT323',monospace;color:#eef8f1;font-size:clamp(42px,5.4vw,86px);line-height:1;margin-top:2px;text-shadow:0 0 16px rgba(150,255,200,.14);">{{ totalTxFmt }}</div>
+          </div>
+          <div>
+            <div style="font-family:'JetBrains Mono',monospace;color:#6f8d7e;font-size:clamp(11px,.92vw,15px);letter-spacing:.22em;text-transform:uppercase;">Transactions / Hour</div>
+            <div style="font-family:'VT323',monospace;color:var(--acc,#2dff8a);font-size:clamp(42px,5.4vw,86px);line-height:1;margin-top:2px;text-shadow:0 0 18px color-mix(in srgb,var(--acc,#2dff8a) 45%,transparent);">{{ txPerHourFmt }}</div>
+          </div>
+          <div>
+            <div style="font-family:'JetBrains Mono',monospace;color:#6f8d7e;font-size:clamp(11px,.92vw,15px);letter-spacing:.22em;text-transform:uppercase;">Today's Volume</div>
+            <div style="font-family:'VT323',monospace;color:#eef8f1;font-size:clamp(40px,5vw,80px);line-height:1;margin-top:2px;text-shadow:0 0 16px rgba(150,255,200,.14);">{{ todayVolumeFmt }}</div>
+          </div>
+        </div>
+
+        <!-- right column -->
+        <div style="display:flex;flex-direction:column;gap:clamp(24px,2.8vw,44px);">
+          <div>
+            <div style="display:flex;justify-content:space-between;align-items:center;">
+              <span style="font-family:'JetBrains Mono',monospace;color:#6f8d7e;font-size:clamp(11px,.92vw,15px);letter-spacing:.22em;text-transform:uppercase;">Last 24 Hours</span>
+              <span style="font-family:'JetBrains Mono',monospace;color:#3c4f45;font-size:clamp(10px,.8vw,12px);letter-spacing:.18em;">TX / HOUR</span>
+            </div>
+            <div style="margin-top:15px;display:flex;align-items:flex-end;gap:clamp(3px,.5vw,7px);height:clamp(96px,13vh,156px);">
+              <sc-for list="{{ bars }}" as="bar" hint-placeholder-count="24">
+                <div style="flex:1;min-width:0;background:var(--acc,#2dff8a);height:{{ bar.h }};opacity:.82;box-shadow:0 0 7px color-mix(in srgb,var(--acc,#2dff8a) 38%,transparent);align-self:flex-end;"></div>
+              </sc-for>
+            </div>
+          </div>
+
+          <sc-if value="{{ showTicker }}" hint-placeholder-val="{{ true }}">
+            <div>
+              <div style="display:flex;justify-content:space-between;align-items:center;">
+                <span style="font-family:'JetBrains Mono',monospace;color:#6f8d7e;font-size:clamp(11px,.92vw,15px);letter-spacing:.22em;text-transform:uppercase;">Live Transactions</span>
+                <span style="font-family:'JetBrains Mono',monospace;color:#3c4f45;font-size:clamp(10px,.8vw,12px);letter-spacing:.15em;">{{ updatedAgo }}</span>
+              </div>
+              <div style="margin-top:8px;display:flex;flex-direction:column;padding-right:4px;">
+                <sc-if value="{{ tickerEmpty }}" hint-placeholder-val="">
+                  <div style="font-family:'JetBrains Mono',monospace;color:#3c4f45;font-size:13px;letter-spacing:.1em;padding:14px 0;">AWAITING TRANSACTIONS…</div>
+                </sc-if>
+                <sc-for list="{{ ticker }}" as="row" hint-placeholder-count="6">
+                  <div style="display:flex;justify-content:space-between;align-items:baseline;gap:14px;padding:9px 0;border-bottom:1px solid #112019;">
+                    <div style="display:flex;gap:14px;align-items:baseline;min-width:0;">
+                      <span style="font-family:'JetBrains Mono',monospace;color:#3c4f45;font-size:clamp(11px,.84vw,13px);white-space:nowrap;">{{ row.time }}</span>
+                      <span style="font-family:'JetBrains Mono',monospace;color:#9cbcab;font-size:clamp(11px,.88vw,14px);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{{ row.name }}</span>
+                    </div>
+                    <span style="font-family:'VT323',monospace;color:#eef8f1;font-size:clamp(21px,1.9vw,30px);white-space:nowrap;line-height:1;">{{ row.amount }}</span>
+                  </div>
+                </sc-for>
+              </div>
+            </div>
+          </sc-if>
+        </div>
+      </div>
+
+      <!-- footer -->
+      <div style="margin-top:clamp(22px,2.6vw,40px);display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:14px;border-top:1px solid #112019;padding-top:16px;">
+        <div style="font-family:'JetBrains Mono',monospace;color:#3c4f45;font-size:clamp(10px,.86vw,13px);letter-spacing:.14em;">{{ footerStatus }}</div>
+        <div style="font-family:'JetBrains Mono',monospace;color:#6f8d7e;font-size:clamp(12px,1vw,15px);letter-spacing:.22em;">{{ clock }} WIB</div>
+        <div style="display:flex;gap:18px;align-items:center;">
+          <sc-if value="{{ isError }}" hint-placeholder-val="">
+            <button onClick="{{ retry }}" style="background:none;border:1px solid #3c4f45;color:#9cbcab;font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.15em;padding:6px 12px;cursor:pointer;">RETRY</button>
+          </sc-if>
+          <button onClick="{{ disconnect }}" style="background:none;border:none;color:#3c4f45;font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.15em;cursor:pointer;">DISCONNECT</button>
+        </div>
+      </div>
+    </div>
+  </sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{
+  &quot;$preview&quot;: { &quot;width&quot;: &quot;100%&quot;, &quot;height&quot;: 820 },
+  &quot;accent&quot;: { &quot;editor&quot;: &quot;enum&quot;, &quot;default&quot;: &quot;Phosphor Green&quot;, &quot;options&quot;: [&quot;Phosphor Green&quot;, &quot;Amber&quot;, &quot;Cyan&quot;, &quot;Mayar Blue&quot;], &quot;tsType&quot;: &quot;string&quot; },
+  &quot;refreshSeconds&quot;: { &quot;editor&quot;: &quot;int&quot;, &quot;default&quot;: 60, &quot;min&quot;: 10, &quot;max&quot;: 300, &quot;tsType&quot;: &quot;number&quot; },
+  &quot;scanlines&quot;: { &quot;editor&quot;: &quot;boolean&quot;, &quot;default&quot;: true, &quot;tsType&quot;: &quot;boolean&quot; },
+  &quot;compactNumbers&quot;: { &quot;editor&quot;: &quot;boolean&quot;, &quot;default&quot;: false, &quot;tsType&quot;: &quot;boolean&quot; },
+  &quot;showTicker&quot;: { &quot;editor&quot;: &quot;boolean&quot;, &quot;default&quot;: true, &quot;tsType&quot;: &quot;boolean&quot; }
+}">
+class Component extends DCLogic {
+  state = {
+    screen: 'loading',
+    keyInput: '', showKey: false, setupError: '',
+    status: 'connecting', errorMsg: '', syncing: false, syncPages: 0,
+    lifetimeVolume: 0, totalTx: 0, todayVolume: 0, txPerHour: 0,
+    buckets: [], recent: [], lastUpdated: 0,
+    dispVolume: 0, dispTotal: 0, dispToday: 0, dispHour: 0,
+    clock: '', now: Date.now(),
+  };
+
+  KEY_LS = 'mayar_monitor_apikey';
+  DEMO_LS = 'mayar_monitor_demo';
+  AGG_LS = 'mayar_monitor_agg_v1';
+  BASE = 'https://api.mayar.id/hl/v1';
+  // Paid transactions endpoint (Mayar Headless API). Adjust here if your account differs.
+  TX_PATH = '/transactions';
+
+  componentDidMount() {
+    this._apiKey = '';
+    this.resetAgg();
+    this._clock = setInterval(() => this.tickClock(), 1000);
+    this.tickClock();
+    this._tween = setInterval(() => this.tweenStep(), 33);
+
+    const demo = localStorage.getItem(this.DEMO_LS) === '1';
+    const key = localStorage.getItem(this.KEY_LS);
+    if (demo) { this.startDemo(); }
+    else if (key) { this._apiKey = key; this.setState({ screen: 'dashboard' }); this.startLive(); }
+    else { this.setState({ screen: 'setup' }); }
+  }
+  componentWillUnmount() { this.clearTimers(); clearInterval(this._clock); clearInterval(this._tween); }
+
+  clearTimers() { clearInterval(this._refresh); clearInterval(this._demoTick); this._refresh = null; this._demoTick = null; }
+  resetAgg() { this._lifetime = 0; this._count = 0; this._lastSeenMs = 0; this._window = []; this._seenIds = new Set(); }
+
+  /* ---------- clock + tween ---------- */
+  tickClock() {
+    const t = new Date().toLocaleTimeString('en-GB', { timeZone: 'Asia/Jakarta' });
+    this.setState({ clock: t, now: Date.now() });
+  }
+  tweenStep() {
+    const tgt = { dispVolume: 'lifetimeVolume', dispTotal: 'totalTx', dispToday: 'todayVolume', dispHour: 'txPerHour' };
+    const upd = {}; let changed = false;
+    for (const k in tgt) {
+      const t = this.state[tgt[k]], c = this.state[k];
+      if (Math.abs(t - c) < 0.5) { if (c !== t) { upd[k] = t; changed = true; } continue; }
+      upd[k] = c + (t - c) * 0.14; changed = true;
+    }
+    if (changed) this.setState(upd);
+  }
+
+  /* ---------- formatting ---------- */
+  fmtRp(n, compact) {
+    n = Math.round(n || 0);
+    if (compact && Math.abs(n) >= 1e6) return 'Rp ' + new Intl.NumberFormat('id-ID', { notation: 'compact', maximumFractionDigits: 1 }).format(n);
+    return 'Rp ' + n.toLocaleString('id-ID');
+  }
+  fmtInt(n) { return Math.round(n || 0).toLocaleString('id-ID'); }
+  hhmmss(ms) { try { return new Date(ms).toLocaleTimeString('en-GB', { timeZone: 'Asia/Jakarta' }); } catch (e) { return '--:--:--'; } }
+  mask(s) {
+    s = (s || '').trim(); if (!s) return 'Pelanggan';
+    const at = s.indexOf('@');
+    if (at > 1) return s.slice(0, 2) + '•••' + s.slice(at);
+    const p = s.split(/\s+/);
+    return p[0] + (p[1] ? ' ' + p[1][0].toUpperCase() + '•••' : ' •••');
+  }
+  agoStr() {
+    if (!this.state.lastUpdated) return '—';
+    const s = Math.max(0, Math.round((this.state.now - this.state.lastUpdated) / 1000));
+    if (s < 60) return s + 'S AGO';
+    return Math.floor(s / 60) + 'M AGO';
+  }
+
+  /* ---------- aggregation ---------- */
+  normTx(t) {
+    const amount = Number(t.amount ?? t.total ?? t.totalAmount ?? t.rate ?? 0) || 0;
+    let ts = t.createdAt ?? t.paidAt ?? t.created_at ?? t.updatedAt ?? Date.now();
+    let ms;
+    if (typeof ts === 'number') ms = ts < 1e12 ? ts * 1000 : ts;
+    else { ms = Date.parse(ts); if (isNaN(ms)) ms = Date.now(); }
+    const name = t.customerName || (t.customer && t.customer.name) || t.name || t.customerEmail || t.email || 'Pelanggan';
+    const id = String(t.id || t.transactionId || (ms + '-' + amount + '-' + name));
+    return { id, amount, ms, name, desc: t.description || t.productName || '' };
+  }
+  ingest(list, opts) {
+    const full = opts && opts.full, incremental = opts && opts.incremental;
+    if (full) this.resetAgg();
+    list.sort((a, b) => a.ms - b.ms);
+    for (const t of list) {
+      if (this._seenIds.has(t.id)) continue;
+      if (incremental && this._lastSeenMs && t.ms <= this._lastSeenMs) continue;
+      this._seenIds.add(t.id);
+      this._lifetime += t.amount; this._count += 1;
+      this._window.push(t);
+      if (t.ms > this._lastSeenMs) this._lastSeenMs = t.ms;
+    }
+    const cutoff = Date.now() - 48 * 3600000;
+    this._window = this._window.filter(t => t.ms >= cutoff).slice(-1200);
+    this.recompute();
+  }
+  recompute() {
+    const now = Date.now();
+    const ds = new Date(); ds.setHours(0, 0, 0, 0); const dayStart = ds.getTime();
+    let today = 0, hour = 0;
+    const buckets = Array.from({ length: 24 }, () => ({ count: 0, vol: 0 }));
+    for (const t of this._window) {
+      if (t.ms >= dayStart) today += t.amount;
+      if (t.ms >= now - 3600000) hour++;
+      const diffH = Math.floor((now - t.ms) / 3600000);
+      if (diffH >= 0 && diffH < 24) { const idx = 23 - diffH; buckets[idx].count++; buckets[idx].vol += t.amount; }
+    }
+    const recent = [...this._window].sort((a, b) => b.ms - a.ms).slice(0, 8);
+    this.setState({ lifetimeVolume: this._lifetime, totalTx: this._count, todayVolume: today, txPerHour: hour, buckets, recent, lastUpdated: now });
+  }
+
+  /* ---------- persistence ---------- */
+  saveAgg() {
+    try { localStorage.setItem(this.AGG_LS, JSON.stringify({ lifetime: this._lifetime, count: this._count, lastSeenMs: this._lastSeenMs, window: this._window.slice(-600) })); } catch (e) {}
+  }
+  loadAgg() {
+    try {
+      const r = localStorage.getItem(this.AGG_LS); if (!r) return false;
+      const a = JSON.parse(r);
+      this._lifetime = a.lifetime || 0; this._count = a.count || 0; this._lastSeenMs = a.lastSeenMs || 0;
+      this._window = Array.isArray(a.window) ? a.window : [];
+      this._seenIds = new Set(this._window.map(t => t.id));
+      this.recompute(); return true;
+    } catch (e) { return false; }
+  }
+
+  /* ---------- live fetch ---------- */
+  async fetchPage(page, pageSize) {
+    const url = this.BASE + this.TX_PATH + '?page=' + page + '&pageSize=' + pageSize;
+    const res = await fetch(url, { headers: { Authorization: 'Bearer ' + this._apiKey, Accept: 'application/json' } });
+    if (res.status === 401 || res.status === 403) throw new Error('INVALID API KEY (' + res.status + ')');
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const j = await res.json();
+    const arr = (j && j.data && Array.isArray(j.data.docs)) ? j.data.docs : (Array.isArray(j && j.data) ? j.data : (Array.isArray(j && j.docs) ? j.docs : (Array.isArray(j) ? j : [])));
+    return arr.map(x => this.normTx(x));
+  }
+  async startLive() {
+    this.clearTimers();
+    this.setState({ status: 'connecting', errorMsg: '' });
+    const hadCache = this.loadAgg();
+    this.setState({ syncing: true, syncPages: 0 });
+    try {
+      const PS = 100, maxPages = hadCache ? 4 : 150;
+      let page = 1, all = [];
+      while (page <= maxPages) {
+        const arr = await this.fetchPage(page, PS);
+        all = all.concat(arr);
+        this.setState({ syncPages: page });
+        if (arr.length < PS) break;
+        page++;
+      }
+      this.ingest(all, hadCache ? { incremental: true } : { full: true });
+      this.setState({ status: 'live', syncing: false, errorMsg: '' });
+      this.saveAgg();
+    } catch (e) {
+      this.setState({ status: 'error', syncing: false, errorMsg: (e && e.message) || 'CONNECTION FAILED' });
+    }
+    const sec = Math.max(10, this.props.refreshSeconds ?? 60);
+    this._refresh = setInterval(() => this.refreshLive(), sec * 1000);
+  }
+  async refreshLive() {
+    try {
+      const PS = 100; let page = 1, all = [];
+      while (page <= 4) { const arr = await this.fetchPage(page, PS); all = all.concat(arr); if (arr.length < PS) break; page++; }
+      this.ingest(all, { incremental: true });
+      this.setState({ status: 'live', errorMsg: '' });
+      this.saveAgg();
+    } catch (e) {
+      this.setState({ status: 'error', errorMsg: (e && e.message) || 'CONNECTION FAILED' });
+    }
+  }
+
+  /* ---------- demo ---------- */
+  DEMO_NAMES = ['Andi Wijaya', 'Sari Putri', 'Budi Santoso', 'Rina Melati', 'Dewi Anggraini', 'Agus Pratama', 'Putri Maharani', 'Bayu Saputra', 'Fitri Handayani', 'Eko Nugroho', 'Maya Lestari', 'Rizki Ramadhan', 'Nina Kusuma', 'Tono Hartanto', 'Wulan Sari', 'Galih Permana'];
+  DEMO_AMTS = [25000, 35000, 49000, 59000, 75000, 99000, 120000, 149000, 199000, 249000, 349000, 499000, 750000, 1200000];
+  randAmt() { return this.DEMO_AMTS[Math.floor(Math.random() * this.DEMO_AMTS.length)]; }
+  randName() { return this.DEMO_NAMES[Math.floor(Math.random() * this.DEMO_NAMES.length)]; }
+  startDemo() {
+    this.clearTimers();
+    this.resetAgg();
+    this._apiKey = '';
+    this._lifetime = 16721122619; this._count = 204725;
+    const now = Date.now();
+    for (let h = 23; h >= 0; h--) {
+      const base = 70 + Math.round(60 * Math.sin((h / 24) * Math.PI * 2 + 1)) + Math.floor(Math.random() * 40);
+      const cnt = Math.max(18, base);
+      for (let i = 0; i < cnt; i++) {
+        const ms = now - h * 3600000 - Math.floor(Math.random() * 3600000);
+        this._window.push({ id: 'd' + h + '-' + i, amount: this.randAmt(), ms, name: this.randName(), desc: '' });
+      }
+    }
+    this._lastSeenMs = now;
+    this.recompute();
+    this.setState({ screen: 'dashboard', status: 'demo' });
+    this._demoTick = setInterval(() => this.demoIncoming(), 3200);
+  }
+  demoIncoming() {
+    const n = 1 + Math.floor(Math.random() * 3);
+    const now = Date.now();
+    for (let i = 0; i < n; i++) {
+      const amt = this.randAmt();
+      this._window.push({ id: 'live-' + now + '-' + i, amount: amt, ms: now - i * 250, name: this.randName(), desc: '' });
+      this._lifetime += amt; this._count += 1;
+    }
+    this._lastSeenMs = now;
+    const cutoff = now - 48 * 3600000;
+    this._window = this._window.filter(t => t.ms >= cutoff).slice(-1400);
+    this.recompute();
+  }
+
+  /* ---------- handlers ---------- */
+  onKeyInput(e) { this.setState({ keyInput: e.target.value, setupError: '' }); }
+  onKeyDown(e) { if (e.key === 'Enter') this.connect(); }
+  toggleShowKey() { this.setState({ showKey: !this.state.showKey }); }
+  connect() {
+    const k = (this.state.keyInput || '').trim();
+    if (!k) { this.setState({ setupError: 'API key is required.' }); return; }
+    localStorage.setItem(this.KEY_LS, k);
+    localStorage.removeItem(this.DEMO_LS);
+    localStorage.removeItem(this.AGG_LS);
+    this._apiKey = k; this.resetAgg();
+    this.setState({ screen: 'dashboard', setupError: '', status: 'connecting' });
+    this.startLive();
+  }
+  useDemo() {
+    localStorage.setItem(this.DEMO_LS, '1');
+    localStorage.removeItem(this.KEY_LS);
+    this.startDemo();
+  }
+  retry() { this.startLive(); }
+  disconnect() {
+    localStorage.removeItem(this.KEY_LS);
+    localStorage.removeItem(this.DEMO_LS);
+    localStorage.removeItem(this.AGG_LS);
+    this.clearTimers(); this.resetAgg();
+    this.setState({ screen: 'setup', keyInput: '', setupError: '', status: 'connecting', lifetimeVolume: 0, totalTx: 0, todayVolume: 0, txPerHour: 0, dispVolume: 0, dispTotal: 0, dispToday: 0, dispHour: 0, buckets: [], recent: [], lastUpdated: 0 });
+  }
+
+  /* ---------- render ---------- */
+  renderVals() {
+    const accMap = { 'Phosphor Green': '#2dff8a', 'Amber': '#ffb000', 'Cyan': '#3df0ff', 'Mayar Blue': '#4d8dff' };
+    const accentColor = accMap[this.props.accent] || '#2dff8a';
+    const compact = this.props.compactNumbers ?? false;
+    const s = this.state;
+    const hasData = s.lastUpdated > 0;
+    const DASH = '———';
+
+    const statusMap = {
+      live: ['LIVE', accentColor], demo: ['DEMO', accentColor],
+      connecting: ['SYNC', '#e0b54a'], error: ['OFFLINE', '#ff6a6a'],
+    };
+    const [statusLabel, statusColor] = statusMap[s.status] || statusMap.connecting;
+
+    const bk = s.buckets.length ? s.buckets : Array.from({ length: 24 }, () => ({ count: 0 }));
+    const max = Math.max(1, ...bk.map(b => b.count));
+    const bars = bk.map(b => ({ h: (5 + 95 * (b.count / max)).toFixed(1) + '%' }));
+
+    const ticker = (s.recent || []).map(t => ({ time: this.hhmmss(t.ms), name: this.mask(t.name), amount: this.fmtRp(t.amount, false) }));
+
+    const sec = Math.max(10, this.props.refreshSeconds ?? 60);
+    let footerStatus;
+    if (s.status === 'demo') footerStatus = '◆ DEMO DATA · SIMULATED FEED · NOT LIVE';
+    else if (s.status === 'error') footerStatus = '✕ OFFLINE · ' + (s.errorMsg || 'CONNECTION FAILED') + (hasData ? ' · SHOWING CACHED' : '');
+    else if (s.status === 'connecting') footerStatus = s.syncing ? ('⟳ SYNCING' + (s.syncPages ? ' · PAGE ' + s.syncPages : '') + '…') : 'CONNECTING…';
+    else footerStatus = '● LIVE · UPDATED ' + this.agoStr() + ' · REFRESH ' + sec + 'S';
+
+    const headerDate = new Date().toLocaleDateString('en-GB', { weekday: 'short', day: '2-digit', month: 'short', year: 'numeric', timeZone: 'Asia/Jakarta' }).toUpperCase();
+
+    return {
+      isSetup: s.screen === 'setup', isLoading: s.screen === 'loading', isDashboard: s.screen === 'dashboard',
+      accentColor,
+      scanlinesOn: this.props.scanlines ?? true,
+      showTicker: this.props.showTicker ?? true,
+      // setup
+      keyType: s.showKey ? 'text' : 'password',
+      keyInput: s.keyInput,
+      showKeyLabel: s.showKey ? 'HIDE' : 'SHOW',
+      setupError: s.setupError,
+      onKeyInput: (e) => this.onKeyInput(e),
+      onKeyDown: (e) => this.onKeyDown(e),
+      toggleShowKey: () => this.toggleShowKey(),
+      connect: () => this.connect(),
+      useDemo: () => this.useDemo(),
+      // dashboard
+      headerDate,
+      statusLabel, statusColor,
+      heroVolume: hasData ? this.fmtRp(s.dispVolume, compact) : 'Rp ' + DASH,
+      totalTxFmt: hasData ? this.fmtInt(s.dispTotal) : DASH,
+      txPerHourFmt: hasData ? this.fmtInt(s.dispHour) : DASH,
+      todayVolumeFmt: hasData ? this.fmtRp(s.dispToday, compact) : 'Rp ' + DASH,
+      bars,
+      ticker, tickerEmpty: ticker.length === 0,
+      updatedAgo: this.agoStr(),
+      clock: s.clock,
+      footerStatus,
+      isError: s.status === 'error',
+      retry: () => this.retry(),
+      disconnect: () => this.disconnect(),
+    };
+  }
+}
+</script>
+</body>
+</html>
