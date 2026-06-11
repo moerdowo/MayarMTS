@@ -2,7 +2,7 @@
 
 A CRT-style big-screen dashboard for monitoring [Mayar](https://mayar.id) transactions in real time. Phosphor-green-on-black, scanlines, vignette, glowing pixel numerals — built to be thrown on a wall display.
 
-![Dashboard](docs/screenshot.png)
+![Dashboard demo](docs/demo.gif)
 
 ## Features
 
