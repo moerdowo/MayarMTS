@@ -15,8 +15,8 @@ const jetbrains = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Mayar Transaction Monitor",
-  description: "Live big-screen dashboard for your Mayar account",
+  title: "Mayar MTS — Monitor The Situation",
+  description: "Live big-screen transaction dashboard for your Mayar account",
 };
 
 export default function RootLayout({

@@ -1,5 +1,5 @@
 {
-  "name": "mayar-monitor",
+  "name": "mayarmts",
   "version": "1.0.0",
   "private": true,
   "scripts": {
@@ -16,6 +16,7 @@
     "@types/node": "^22",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "puppeteer-core": "24.43.1",
     "typescript": "^5"
   }
 }

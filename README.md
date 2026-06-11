@@ -1,8 +1,8 @@
-# Mayar Transaction Monitor
+# Mayar MTS (Monitor The Situation)
 
 A CRT-style big-screen dashboard for monitoring [Mayar](https://mayar.id) transactions in real time. Phosphor-green-on-black, scanlines, vignette, glowing pixel numerals — built to be thrown on a wall display.
 
-![Dashboard](design/mayarmts/project/screenshots/dashboard2.png)
+![Dashboard](docs/screenshot.png)
 
 ## Features
 
