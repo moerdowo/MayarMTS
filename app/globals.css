@@ -66,6 +66,35 @@ input::placeholder {
   }
 }
 
+@keyframes rowIn {
+  0% {
+    opacity: 0;
+    transform: translateX(-16px);
+    background: color-mix(in srgb, var(--acc, #2dff8a) 22%, transparent);
+  }
+  55% {
+    opacity: 1;
+    transform: translateX(0);
+    background: color-mix(in srgb, var(--acc, #2dff8a) 12%, transparent);
+  }
+  100% {
+    opacity: 1;
+    transform: translateX(0);
+    background: transparent;
+  }
+}
+
+@keyframes amountIn {
+  0% {
+    color: var(--acc, #2dff8a);
+    text-shadow: 0 0 18px var(--acc, #2dff8a);
+  }
+  100% {
+    color: #eef8f1;
+    text-shadow: none;
+  }
+}
+
 /* ===================== root / overlays ===================== */
 
 .crt-root {
@@ -510,6 +539,12 @@ input::placeholder {
   gap: 14px;
   padding: 9px 0;
   border-bottom: 1px solid #112019;
+  animation: rowIn 0.9s ease-out backwards;
+}
+
+.ticker-row .ticker-amount {
+  animation: amountIn 1.6s ease-out backwards;
+  animation-delay: inherit;
 }
 
 .ticker-left {

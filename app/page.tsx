@@ -828,8 +828,12 @@ export default function MayarMonitor() {
                         AWAITING TRANSACTIONS…
                       </div>
                     )}
-                    {ticker.map((row) => (
-                      <div key={row.id} className="ticker-row">
+                    {ticker.map((row, i) => (
+                      <div
+                        key={row.id}
+                        className="ticker-row"
+                        style={{ animationDelay: `${i * 70}ms` }}
+                      >
                         <div className="ticker-left">
                           <span className="ticker-time">{row.time}</span>
                           <span className="ticker-name">{row.name}</span>
