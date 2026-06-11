@@ -563,6 +563,19 @@ input::placeholder {
   letter-spacing: 0.14em;
 }
 
+.footer-powered {
+  font-family: var(--font-mono), monospace;
+  color: #3c4f45;
+  font-size: clamp(10px, 0.86vw, 13px);
+  letter-spacing: 0.14em;
+}
+
+.powered-mayar {
+  color: var(--acc, #2dff8a);
+  font-weight: 700;
+  text-shadow: 0 0 10px color-mix(in srgb, var(--acc, #2dff8a) 45%, transparent);
+}
+
 .footer-clock {
   font-family: var(--font-mono), monospace;
   color: #6f8d7e;

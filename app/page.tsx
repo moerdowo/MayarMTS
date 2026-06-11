@@ -66,6 +66,21 @@ function hhmmss(ms: number) {
   }
 }
 
+/* Mayar API keys are JWTs whose payload carries the merchant identity
+   ({ name, link, sub, ... }) — there is no profile endpoint, so decode it
+   locally. Returns '' if the key isn't a parseable JWT. */
+function merchantFromKey(key: string): string {
+  try {
+    const part = key.split(".")[1];
+    const json = JSON.parse(
+      atob(part.replace(/-/g, "+").replace(/_/g, "/"))
+    );
+    return (json.name || json.link || "").toString();
+  } catch {
+    return "";
+  }
+}
+
 function maskName(s: string) {
   s = (s || "").trim();
   if (!s) return "Pelanggan";
@@ -142,6 +157,7 @@ export default function MayarMonitor() {
   const [buckets, setBuckets] = useState<{ count: number; vol: number }[]>([]);
   const [recent, setRecent] = useState<Tx[]>([]);
   const [lastUpdated, setLastUpdated] = useState(0);
+  const [merchantName, setMerchantName] = useState("");
   const [clock, setClock] = useState("");
   const [now, setNow] = useState(0);
   const [settings, setSettings] = useState<Settings>(DEFAULT_SETTINGS);
@@ -439,6 +455,7 @@ export default function MayarMonitor() {
     }
     a.lastSeenMs = nowMs;
     recompute();
+    setMerchantName("TOKO DEMO");
     setScreen("dashboard");
     setStatus("demo");
     demoTimer.current = setInterval(() => demoIncoming(), 3200);
@@ -459,6 +476,7 @@ export default function MayarMonitor() {
     if (demo) startDemo();
     else if (key) {
       agg.current.apiKey = key;
+      setMerchantName(merchantFromKey(key));
       setScreen("dashboard");
       startLive(stored.refreshSeconds);
     } else setScreen("setup");
@@ -543,6 +561,7 @@ export default function MayarMonitor() {
     localStorage.removeItem(AGG_LS);
     agg.current.apiKey = k;
     resetAgg();
+    setMerchantName(merchantFromKey(k));
     setScreen("dashboard");
     setSetupError("");
     setStatus("connecting");
@@ -563,6 +582,7 @@ export default function MayarMonitor() {
     resetAgg();
     agg.current.apiKey = "";
     setScreen("setup");
+    setMerchantName("");
     setKeyInput("");
     setSetupError("");
     setStatus("connecting");
@@ -731,7 +751,9 @@ export default function MayarMonitor() {
           <div className="dash-header">
             <div className="logo-row">
               <div className="logo-dot" />
-              <span className="logo-text">MAYAR</span>
+              <span className="logo-text">
+                {(merchantName || "MAYAR").toUpperCase()}
+              </span>
             </div>
             <div className="header-right">
               <div>{headerDate}</div>
@@ -823,6 +845,9 @@ export default function MayarMonitor() {
 
           <div className="dash-footer">
             <div className="footer-status">{footerStatus}</div>
+            <div className="footer-powered">
+              POWERED BY <span className="powered-mayar">MAYAR</span>
+            </div>
             <div className="footer-clock">{clock} WIB</div>
             <div className="footer-actions">
               {status === "error" && (
