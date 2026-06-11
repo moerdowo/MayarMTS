@@ -400,7 +400,7 @@ export default function MayarMonitor() {
         setSyncing(false);
         setErrorMsg(e?.message || "CONNECTION FAILED");
       }
-      const sec = Math.max(10, refreshSeconds || 60);
+      const sec = Math.max(60, refreshSeconds || 60);
       refreshTimer.current = setInterval(() => refreshLive(), sec * 1000);
     },
     [clearTimers, fetchPage, ingest, loadAgg, recompute, refreshLive, saveAgg]
@@ -469,6 +469,10 @@ export default function MayarMonitor() {
       const raw = localStorage.getItem(SETTINGS_LS);
       if (raw) stored = { ...DEFAULT_SETTINGS, ...JSON.parse(raw) };
     } catch {}
+    stored.refreshSeconds = Math.min(
+      300,
+      Math.max(60, stored.refreshSeconds || 60)
+    );
     setSettings(stored);
 
     const demo = localStorage.getItem(DEMO_LS) === "1";
@@ -543,7 +547,7 @@ export default function MayarMonitor() {
         status !== "demo"
       ) {
         clearInterval(refreshTimer.current);
-        const sec = Math.max(10, next.refreshSeconds || 60);
+        const sec = Math.max(60, next.refreshSeconds || 60);
         refreshTimer.current = setInterval(() => refreshLive(), sec * 1000);
       }
       return next;
@@ -628,7 +632,7 @@ export default function MayarMonitor() {
     return Math.floor(s / 60) + "M AGO";
   })();
 
-  const sec = Math.max(10, settings.refreshSeconds || 60);
+  const sec = Math.max(60, settings.refreshSeconds || 60);
   let footerStatus: string;
   if (status === "demo") footerStatus = "◆ DEMO DATA · SIMULATED FEED · NOT LIVE";
   else if (status === "error")
@@ -899,14 +903,14 @@ export default function MayarMonitor() {
                 <input
                   className="settings-input"
                   type="number"
-                  min={10}
+                  min={60}
                   max={300}
                   value={settings.refreshSeconds}
                   onChange={(e) =>
                     updateSettings({
                       refreshSeconds: Math.min(
                         300,
-                        Math.max(10, Number(e.target.value) || 60)
+                        Math.max(60, Number(e.target.value) || 60)
                       ),
                     })
                   }
