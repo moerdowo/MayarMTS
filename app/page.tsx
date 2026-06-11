@@ -126,6 +126,7 @@ export default function MayarMonitor() {
   const [errorMsg, setErrorMsg] = useState("");
   const [syncing, setSyncing] = useState(false);
   const [syncPages, setSyncPages] = useState(0);
+  const [syncTotal, setSyncTotal] = useState(0);
   const [targets, setTargets] = useState({
     lifetimeVolume: 0,
     totalTx: 0,
@@ -151,6 +152,7 @@ export default function MayarMonitor() {
     apiKey: "",
     lifetime: 0,
     count: 0,
+    apiTotal: 0, // totalTransaction reported by the Mayar API
     lastSeenMs: 0,
     window: [] as Tx[],
     seenIds: new Set<string>(),
@@ -171,6 +173,7 @@ export default function MayarMonitor() {
     const a = agg.current;
     a.lifetime = 0;
     a.count = 0;
+    a.apiTotal = 0;
     a.lastSeenMs = 0;
     a.window = [];
     a.seenIds = new Set();
@@ -200,7 +203,7 @@ export default function MayarMonitor() {
     const rec = [...a.window].sort((x, y) => y.ms - x.ms).slice(0, 8);
     setTargets({
       lifetimeVolume: a.lifetime,
-      totalTx: a.count,
+      totalTx: a.apiTotal || a.count,
       todayVolume: today,
       txPerHour: hour,
     });
@@ -240,6 +243,7 @@ export default function MayarMonitor() {
         JSON.stringify({
           lifetime: a.lifetime,
           count: a.count,
+          apiTotal: a.apiTotal,
           lastSeenMs: a.lastSeenMs,
           window: a.window.slice(-600),
         })
@@ -255,6 +259,7 @@ export default function MayarMonitor() {
       const a = agg.current;
       a.lifetime = s.lifetime || 0;
       a.count = s.count || 0;
+      a.apiTotal = s.apiTotal || 0;
       a.lastSeenMs = s.lastSeenMs || 0;
       a.window = Array.isArray(s.window) ? s.window : [];
       a.seenIds = new Set(a.window.map((t: Tx) => t.id));
@@ -267,23 +272,43 @@ export default function MayarMonitor() {
 
   /* ---------- live fetch ---------- */
 
-  const fetchPage = useCallback(async (page: number, pageSize: number) => {
-    const res = await fetch(`${TX_API}?page=${page}&pageSize=${pageSize}`, {
-      headers: { "x-mayar-key": agg.current.apiKey },
-    });
-    if (res.status === 401 || res.status === 403)
-      throw new Error("INVALID API KEY (" + res.status + ")");
-    if (!res.ok) throw new Error("HTTP " + res.status);
-    const j = await res.json();
-    const arr: any[] = Array.isArray(j?.data)
-      ? j.data
-      : Array.isArray(j?.data?.docs)
-        ? j.data.docs
-        : Array.isArray(j)
-          ? j
-          : [];
-    return { txs: arr.map(normTx), hasMore: j?.hasMore === true };
-  }, []);
+  const fetchPage = useCallback(
+    async (page: number, pageSize: number, attempt = 0): Promise<{
+      txs: Tx[];
+      hasMore: boolean;
+      pageCount: number;
+      total: number;
+    }> => {
+      const res = await fetch(`${TX_API}?page=${page}&pageSize=${pageSize}`, {
+        headers: { "x-mayar-key": agg.current.apiKey },
+      });
+      if (res.status === 401 || res.status === 403)
+        throw new Error("INVALID API KEY (" + res.status + ")");
+      if (res.status === 429 || res.status >= 500) {
+        if (attempt < 3) {
+          await new Promise((r) => setTimeout(r, 1000 * (attempt + 1)));
+          return fetchPage(page, pageSize, attempt + 1);
+        }
+        throw new Error("HTTP " + res.status);
+      }
+      if (!res.ok) throw new Error("HTTP " + res.status);
+      const j = await res.json();
+      const arr: any[] = Array.isArray(j?.data)
+        ? j.data
+        : Array.isArray(j?.data?.docs)
+          ? j.data.docs
+          : Array.isArray(j)
+            ? j
+            : [];
+      return {
+        txs: arr.map(normTx),
+        hasMore: j?.hasMore === true,
+        pageCount: Number(j?.pageCount) || 0,
+        total: Number(j?.totalTransaction) || 0,
+      };
+    },
+    []
+  );
 
   const refreshLive = useCallback(async () => {
     try {
@@ -291,8 +316,9 @@ export default function MayarMonitor() {
       let page = 1;
       let all: Tx[] = [];
       while (page <= 4) {
-        const { txs, hasMore } = await fetchPage(page, PS);
+        const { txs, hasMore, total } = await fetchPage(page, PS);
         all = all.concat(txs);
+        if (total) agg.current.apiTotal = total;
         if (!hasMore && txs.length < PS) break;
         page++;
       }
@@ -314,23 +340,45 @@ export default function MayarMonitor() {
       const hadCache = loadAgg();
       setSyncing(true);
       setSyncPages(0);
+      setSyncTotal(0);
       try {
         const PS = 100;
-        const maxPages = hadCache ? 4 : 150;
-        let page = 1;
-        let all: Tx[] = [];
-        while (page <= maxPages) {
-          const { txs, hasMore } = await fetchPage(page, PS);
-          all = all.concat(txs);
-          setSyncPages(page);
-          if (!hasMore && txs.length < PS) break;
-          page++;
+        if (hadCache) {
+          await refreshLive();
+        } else {
+          // full sync: page 1 tells us how many pages exist, then fetch the
+          // rest in small concurrent batches (the API has no documented rate
+          // limit; fetchPage retries 429/5xx with backoff)
+          const MAX_PAGES = 500;
+          const BATCH = 4;
+          const first = await fetchPage(1, PS);
+          const pages = Math.min(first.pageCount || 1, MAX_PAGES);
+          setSyncTotal(pages);
+          setSyncPages(1);
+          let all: Tx[] = first.txs;
+          let stop = !first.hasMore && first.txs.length < PS;
+          for (let p = 2; p <= pages && !stop; p += BATCH) {
+            const nums = [];
+            for (let q = p; q <= Math.min(p + BATCH - 1, pages); q++)
+              nums.push(q);
+            const batch = await Promise.all(
+              nums.map((pg) => fetchPage(pg, PS))
+            );
+            for (const b of batch) all = all.concat(b.txs);
+            setSyncPages(nums[nums.length - 1]);
+            const last = batch[batch.length - 1];
+            stop = !last.hasMore && last.txs.length < PS;
+          }
+          ingest(all, { full: true }); // resets aggregates, so set apiTotal after
+          if (first.total) {
+            agg.current.apiTotal = first.total;
+            recompute();
+          }
+          setStatus("live");
+          setErrorMsg("");
+          saveAgg();
         }
-        ingest(all, hadCache ? { incremental: true } : { full: true });
-        setStatus("live");
         setSyncing(false);
-        setErrorMsg("");
-        saveAgg();
       } catch (e: any) {
         setStatus("error");
         setSyncing(false);
@@ -339,7 +387,7 @@ export default function MayarMonitor() {
       const sec = Math.max(10, refreshSeconds || 60);
       refreshTimer.current = setInterval(() => refreshLive(), sec * 1000);
     },
-    [clearTimers, fetchPage, ingest, loadAgg, refreshLive, saveAgg]
+    [clearTimers, fetchPage, ingest, loadAgg, recompute, refreshLive, saveAgg]
   );
 
   /* ---------- demo ---------- */
@@ -570,7 +618,11 @@ export default function MayarMonitor() {
       (hasData ? " · SHOWING CACHED" : "");
   else if (status === "connecting")
     footerStatus = syncing
-      ? "⟳ SYNCING" + (syncPages ? " · PAGE " + syncPages : "") + "…"
+      ? "⟳ SYNCING" +
+        (syncPages
+          ? " · PAGE " + syncPages + (syncTotal ? "/" + syncTotal : "")
+          : "") +
+        "…"
       : "CONNECTING…";
   else footerStatus = "● LIVE · UPDATED " + agoStr + " · REFRESH " + sec + "S";
 
