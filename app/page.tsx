@@ -156,13 +156,13 @@ export default function MayarMonitor() {
   const [syncTotal, setSyncTotal] = useState(0);
   const [targets, setTargets] = useState({
     vol24h: 0,
-    totalTx: 0,
+    todayTx: 0,
     todayVolume: 0,
     txPerHour: 0,
   });
   const [disp, setDisp] = useState({
     disp24h: 0,
-    dispTotal: 0,
+    dispTodayTx: 0,
     dispToday: 0,
     dispHour: 0,
   });
@@ -216,11 +216,15 @@ export default function MayarMonitor() {
     ds.setHours(0, 0, 0, 0);
     const dayStart = ds.getTime();
     let today = 0,
+      todayCount = 0,
       hour = 0,
       vol24 = 0;
     const bk = Array.from({ length: 24 }, () => ({ count: 0, vol: 0 }));
     for (const t of a.window) {
-      if (t.ms >= dayStart) today += t.amount;
+      if (t.ms >= dayStart) {
+        today += t.amount;
+        todayCount++;
+      }
       if (t.ms >= nowMs - 3600000) hour++;
       const diffH = Math.floor((nowMs - t.ms) / 3600000);
       if (diffH >= 0 && diffH < 24) {
@@ -233,7 +237,7 @@ export default function MayarMonitor() {
     const rec = [...a.window].sort((x, y) => y.ms - x.ms).slice(0, 8);
     setTargets({
       vol24h: vol24,
-      totalTx: a.apiTotal || a.count,
+      todayTx: todayCount,
       todayVolume: today,
       txPerHour: hour,
     });
@@ -537,7 +541,7 @@ export default function MayarMonitor() {
         const t = targetsRef.current;
         const pairs: [keyof typeof c, number][] = [
           ["disp24h", t.vol24h],
-          ["dispTotal", t.totalTx],
+          ["dispTodayTx", t.todayTx],
           ["dispToday", t.todayVolume],
           ["dispHour", t.txPerHour],
         ];
@@ -618,8 +622,8 @@ export default function MayarMonitor() {
     setKeyInput("");
     setSetupError("");
     setStatus("connecting");
-    setTargets({ vol24h: 0, totalTx: 0, todayVolume: 0, txPerHour: 0 });
-    setDisp({ disp24h: 0, dispTotal: 0, dispToday: 0, dispHour: 0 });
+    setTargets({ vol24h: 0, todayTx: 0, todayVolume: 0, txPerHour: 0 });
+    setDisp({ disp24h: 0, dispTodayTx: 0, dispToday: 0, dispHour: 0 });
     setBuckets([]);
     setRecent([]);
     setLastUpdated(0);
@@ -831,9 +835,9 @@ export default function MayarMonitor() {
           <div className="dash-grid">
             <div className="col-left">
               <div>
-                <div className="stat-label">Total Transactions</div>
+                <div className="stat-label">Today&apos;s Transactions</div>
                 <div className="stat-value">
-                  {hasData ? fmtInt(disp.dispTotal) : DASH}
+                  {hasData ? fmtInt(disp.dispTodayTx) : DASH}
                 </div>
               </div>
               <div>
