@@ -356,19 +356,39 @@ export default function MayarMonitor() {
     []
   );
 
+  // Every displayed metric (today's count/volume, 24h volume + chart, tx/hour,
+  // ticker) only needs the last ~24h. The API returns newest-first, so page
+  // from the top and stop as soon as we pass the window — no full-history sync.
+  // Sequential (no concurrent bursts) to stay under any rate limit.
+  const SYNC_HOURS = 26; // 24h window + margin for "today" spanning midnight
+  const SYNC_MAX_PAGES = 60; // ponytail: ceiling ~3000 tx in-window; older data isn't shown
+
+  const collectRecent = useCallback(
+    async (incremental: boolean): Promise<Tx[]> => {
+      const PS = 50;
+      const cutoff = Date.now() - SYNC_HOURS * 3600000;
+      // On refresh, also stop once we reach what we already have.
+      const floor = incremental
+        ? Math.max(cutoff, agg.current.lastSeenMs)
+        : cutoff;
+      let all: Tx[] = [];
+      for (let page = 1; page <= SYNC_MAX_PAGES; page++) {
+        const { txs, hasMore } = await fetchPage(page, PS);
+        all = all.concat(txs);
+        setSyncPages(page);
+        const oldest = txs.length ? Math.min(...txs.map((t) => t.ms)) : Infinity;
+        // Stop at end of data (hasMore is authoritative) or once we've paged
+        // past the window. Newest-first, so `oldest` is this page's boundary.
+        if (!txs.length || !hasMore || oldest <= floor) break;
+      }
+      return all;
+    },
+    [fetchPage]
+  );
+
   const refreshLive = useCallback(async () => {
     try {
-      const PS = 100;
-      let page = 1;
-      let all: Tx[] = [];
-      while (page <= 4) {
-        const { txs, hasMore, total } = await fetchPage(page, PS);
-        all = all.concat(txs);
-        if (total) agg.current.apiTotal = total;
-        if (!hasMore && txs.length < PS) break;
-        page++;
-      }
-      ingest(all, { incremental: true });
+      ingest(await collectRecent(true), { incremental: true });
       setStatus("live");
       setErrorMsg("");
       saveAgg();
@@ -376,7 +396,7 @@ export default function MayarMonitor() {
       setStatus("error");
       setErrorMsg(e?.message || "CONNECTION FAILED");
     }
-  }, [fetchPage, ingest, saveAgg]);
+  }, [collectRecent, ingest, saveAgg]);
 
   const startLive = useCallback(
     async (refreshSeconds: number) => {
@@ -388,42 +408,11 @@ export default function MayarMonitor() {
       setSyncPages(0);
       setSyncTotal(0);
       try {
-        const PS = 100;
-        if (hadCache) {
-          await refreshLive();
-        } else {
-          // full sync: page 1 tells us how many pages exist, then fetch the
-          // rest in small concurrent batches (the API has no documented rate
-          // limit; fetchPage retries 429/5xx with backoff)
-          const MAX_PAGES = 500;
-          const BATCH = 4;
-          const first = await fetchPage(1, PS);
-          const pages = Math.min(first.pageCount || 1, MAX_PAGES);
-          setSyncTotal(pages);
-          setSyncPages(1);
-          let all: Tx[] = first.txs;
-          let stop = !first.hasMore && first.txs.length < PS;
-          for (let p = 2; p <= pages && !stop; p += BATCH) {
-            const nums = [];
-            for (let q = p; q <= Math.min(p + BATCH - 1, pages); q++)
-              nums.push(q);
-            const batch = await Promise.all(
-              nums.map((pg) => fetchPage(pg, PS))
-            );
-            for (const b of batch) all = all.concat(b.txs);
-            setSyncPages(nums[nums.length - 1]);
-            const last = batch[batch.length - 1];
-            stop = !last.hasMore && last.txs.length < PS;
-          }
-          ingest(all, { full: true }); // resets aggregates, so set apiTotal after
-          if (first.total) {
-            agg.current.apiTotal = first.total;
-            recompute();
-          }
-          setStatus("live");
-          setErrorMsg("");
-          saveAgg();
-        }
+        const recent = await collectRecent(hadCache);
+        ingest(recent, hadCache ? { incremental: true } : { full: true });
+        setStatus("live");
+        setErrorMsg("");
+        saveAgg();
         setSyncing(false);
       } catch (e: any) {
         setStatus("error");
@@ -433,7 +422,7 @@ export default function MayarMonitor() {
       const sec = Math.max(60, refreshSeconds || 60);
       refreshTimer.current = setInterval(() => refreshLive(), sec * 1000);
     },
-    [clearTimers, fetchPage, ingest, loadAgg, recompute, refreshLive, saveAgg]
+    [clearTimers, collectRecent, ingest, loadAgg, refreshLive, saveAgg]
   );
 
   /* ---------- demo ---------- */
