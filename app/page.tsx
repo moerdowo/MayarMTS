@@ -307,33 +307,45 @@ export default function MayarMonitor() {
       pageCount: number;
       total: number;
     }> => {
-      const res = await fetch(`${TX_API}?page=${page}&pageSize=${pageSize}`, {
-        headers: { "x-mayar-key": agg.current.apiKey },
-      });
-      if (res.status === 401 || res.status === 403)
-        throw new Error("INVALID API KEY (" + res.status + ")");
-      if (res.status === 429 || res.status >= 500) {
-        if (attempt < 3) {
-          await new Promise((r) => setTimeout(r, 1000 * (attempt + 1)));
-          return fetchPage(page, pageSize, attempt + 1);
-        }
-        throw new Error("HTTP " + res.status);
-      }
-      if (!res.ok) throw new Error("HTTP " + res.status);
-      const j = await res.json();
-      const arr: any[] = Array.isArray(j?.data)
-        ? j.data
-        : Array.isArray(j?.data?.docs)
-          ? j.data.docs
-          : Array.isArray(j)
-            ? j
-            : [];
-      return {
-        txs: arr.map(normTx),
-        hasMore: j?.hasMore === true,
-        pageCount: Number(j?.pageCount) || 0,
-        total: Number(j?.totalTransaction) || 0,
+      // Retry every transient failure (network reject, bad JSON, 429, 5xx) —
+      // over hundreds of pages a single un-retried blip would abort the whole
+      // sync. Only 401/403 is fatal. Exponential backoff + jitter.
+      const MAX_ATTEMPTS = 5;
+      const retry = async () => {
+        const wait = 400 * 2 ** attempt + Math.floor(Math.random() * 300);
+        await new Promise((r) => setTimeout(r, wait));
+        return fetchPage(page, pageSize, attempt + 1);
       };
+      try {
+        const res = await fetch(`${TX_API}?page=${page}&pageSize=${pageSize}`, {
+          headers: { "x-mayar-key": agg.current.apiKey },
+        });
+        if (res.status === 401 || res.status === 403)
+          throw new Error("INVALID API KEY (" + res.status + ")");
+        if (!res.ok) {
+          if (attempt < MAX_ATTEMPTS) return retry();
+          throw new Error("HTTP " + res.status);
+        }
+        const j = await res.json();
+        const arr: any[] = Array.isArray(j?.data)
+          ? j.data
+          : Array.isArray(j?.data?.docs)
+            ? j.data.docs
+            : Array.isArray(j)
+              ? j
+              : [];
+        return {
+          txs: arr.map(normTx),
+          hasMore: j?.hasMore === true,
+          pageCount: Number(j?.pageCount) || 0,
+          total: Number(j?.totalTransaction) || 0,
+        };
+      } catch (e: any) {
+        // Network reject / JSON parse error → retry; auth failure → give up.
+        if (attempt < MAX_ATTEMPTS && !String(e?.message).startsWith("INVALID"))
+          return retry();
+        throw e;
+      }
     },
     []
   );
