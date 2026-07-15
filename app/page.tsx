@@ -155,13 +155,13 @@ export default function MayarMonitor() {
   const [syncPages, setSyncPages] = useState(0);
   const [syncTotal, setSyncTotal] = useState(0);
   const [targets, setTargets] = useState({
-    lifetimeVolume: 0,
+    vol24h: 0,
     totalTx: 0,
     todayVolume: 0,
     txPerHour: 0,
   });
   const [disp, setDisp] = useState({
-    dispVolume: 0,
+    disp24h: 0,
     dispTotal: 0,
     dispToday: 0,
     dispHour: 0,
@@ -216,7 +216,8 @@ export default function MayarMonitor() {
     ds.setHours(0, 0, 0, 0);
     const dayStart = ds.getTime();
     let today = 0,
-      hour = 0;
+      hour = 0,
+      vol24 = 0;
     const bk = Array.from({ length: 24 }, () => ({ count: 0, vol: 0 }));
     for (const t of a.window) {
       if (t.ms >= dayStart) today += t.amount;
@@ -226,11 +227,12 @@ export default function MayarMonitor() {
         const idx = 23 - diffH;
         bk[idx].count++;
         bk[idx].vol += t.amount;
+        vol24 += t.amount;
       }
     }
     const rec = [...a.window].sort((x, y) => y.ms - x.ms).slice(0, 8);
     setTargets({
-      lifetimeVolume: a.lifetime,
+      vol24h: vol24,
       totalTx: a.apiTotal || a.count,
       todayVolume: today,
       txPerHour: hour,
@@ -534,7 +536,7 @@ export default function MayarMonitor() {
       setDisp((c) => {
         const t = targetsRef.current;
         const pairs: [keyof typeof c, number][] = [
-          ["dispVolume", t.lifetimeVolume],
+          ["disp24h", t.vol24h],
           ["dispTotal", t.totalTx],
           ["dispToday", t.todayVolume],
           ["dispHour", t.txPerHour],
@@ -616,8 +618,8 @@ export default function MayarMonitor() {
     setKeyInput("");
     setSetupError("");
     setStatus("connecting");
-    setTargets({ lifetimeVolume: 0, totalTx: 0, todayVolume: 0, txPerHour: 0 });
-    setDisp({ dispVolume: 0, dispTotal: 0, dispToday: 0, dispHour: 0 });
+    setTargets({ vol24h: 0, totalTx: 0, todayVolume: 0, txPerHour: 0 });
+    setDisp({ disp24h: 0, dispTotal: 0, dispToday: 0, dispHour: 0 });
     setBuckets([]);
     setRecent([]);
     setLastUpdated(0);
@@ -810,7 +812,7 @@ export default function MayarMonitor() {
 
           <div className="hero">
             <div className="hero-top">
-              <span className="hero-label">Transaction Volume · Lifetime</span>
+              <span className="hero-label">Transaction Volume · Last 24 Hours</span>
               <span className="status-badge">
                 <span className="status-dot" />
                 {statusLabel}{" "}
@@ -821,7 +823,7 @@ export default function MayarMonitor() {
             </div>
             <div className="hero-value">
               {hasData
-                ? fmtRp(disp.dispVolume, settings.compactNumbers)
+                ? fmtRp(disp.disp24h, settings.compactNumbers)
                 : "Rp " + DASH}
             </div>
           </div>
