@@ -653,10 +653,40 @@ input::placeholder {
 
 /* ===================== settings panel ===================== */
 
+.fab-tweaks {
+  position: fixed;
+  right: 20px;
+  bottom: 20px;
+  z-index: 71;
+  width: 46px;
+  height: 46px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #070d0a;
+  border: 1px solid var(--acc, #2dff8a);
+  color: var(--acc, #2dff8a);
+  cursor: pointer;
+  box-shadow: 0 0 18px color-mix(in srgb, var(--acc, #2dff8a) 30%, transparent);
+  transition:
+    transform 0.12s ease,
+    box-shadow 0.12s ease;
+}
+
+.fab-tweaks:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 0 26px color-mix(in srgb, var(--acc, #2dff8a) 45%, transparent);
+}
+
+.fab-tweaks.active {
+  background: var(--acc, #2dff8a);
+  color: #04140b;
+}
+
 .settings-panel {
   position: fixed;
-  right: 18px;
-  bottom: 64px;
+  right: 20px;
+  bottom: 78px;
   z-index: 70;
   width: 280px;
   background: #070d0a;

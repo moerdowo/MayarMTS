@@ -895,17 +895,33 @@ export default function MayarMonitor() {
                   RETRY
                 </button>
               )}
-              <button
-                className="btn-ghost"
-                onClick={() => setSettingsOpen((v) => !v)}
-              >
-                TWEAKS
-              </button>
               <button className="btn-ghost" onClick={disconnect}>
                 DISCONNECT
               </button>
             </div>
           </div>
+
+          <button
+            className={"fab-tweaks" + (settingsOpen ? " active" : "")}
+            onClick={() => setSettingsOpen((v) => !v)}
+            aria-label="Customize"
+            title="Customize"
+          >
+            <svg
+              width="20"
+              height="20"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth={2}
+              strokeLinecap="round"
+            >
+              <line x1="4" y1="9" x2="20" y2="9" />
+              <line x1="4" y1="16" x2="20" y2="16" />
+              <circle cx="9" cy="9" r="2.6" fill="#070d0a" />
+              <circle cx="15" cy="16" r="2.6" fill="#070d0a" />
+            </svg>
+          </button>
 
           {settingsOpen && (
             <div className="settings-panel">
