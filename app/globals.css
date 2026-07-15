@@ -374,6 +374,10 @@ input::placeholder {
   margin-top: 5px;
 }
 
+.header-time {
+  color: #eef8f1;
+}
+
 /* hero */
 
 .hero {

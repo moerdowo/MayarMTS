@@ -789,7 +789,9 @@ export default function MayarMonitor() {
               </span>
             </div>
             <div className="header-right">
-              <div>{headerDate}</div>
+              <div>
+                {headerDate} · <span className="header-time">{clock}</span> WIB
+              </div>
               <div className="sub">TRANSACTION MONITOR</div>
             </div>
           </div>
