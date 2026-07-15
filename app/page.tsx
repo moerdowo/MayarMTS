@@ -1,6 +1,9 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { DitherGradient } from "@/components/dither-kit/gradient";
+import { hueFill } from "@/components/dither-kit/pixel";
+import { rgb as rgbStr } from "@/components/dither-kit/palette";
 
 /* ---------- constants ---------- */
 
@@ -17,8 +20,12 @@ const ACCENTS: Record<string, string> = {
   "Mayar Blue": "#4d8dff",
 };
 
+type Theme = "crt" | "dither";
+
 type Settings = {
   accent: string;
+  theme: Theme;
+  ditherHue: number; // 0–360, drives the Dither theme's colour
   refreshSeconds: number;
   scanlines: boolean;
   compactNumbers: boolean;
@@ -27,11 +34,16 @@ type Settings = {
 
 const DEFAULT_SETTINGS: Settings = {
   accent: "Phosphor Green",
+  theme: "crt",
+  ditherHue: 150, // phosphor green, to match the CRT identity
   refreshSeconds: 60,
   scanlines: true,
   compactNumbers: false,
   showTicker: true,
 };
+
+/** Accent colour for the Dither theme — the chosen hue as an rgb() string. */
+const ditherAccent = (hue: number) => rgbStr(hueFill(hue));
 
 type Tx = { id: string; amount: number; ms: number; name: string };
 type Screen = "loading" | "setup" | "dashboard";
@@ -473,6 +485,8 @@ export default function MayarMonitor() {
       300,
       Math.max(60, stored.refreshSeconds || 60)
     );
+    stored.theme = stored.theme === "dither" ? "dither" : "crt";
+    stored.ditherHue = ((Math.round(stored.ditherHue) % 360) + 360) % 360;
     setSettings(stored);
 
     const demo = localStorage.getItem(DEMO_LS) === "1";
@@ -600,7 +614,10 @@ export default function MayarMonitor() {
 
   /* ---------- derived render values ---------- */
 
-  const accentColor = ACCENTS[settings.accent] || "#2dff8a";
+  const accentColor =
+    settings.theme === "dither"
+      ? ditherAccent(settings.ditherHue)
+      : ACCENTS[settings.accent] || "#2dff8a";
   const hasData = lastUpdated > 0;
   const DASH = "———";
 
@@ -673,7 +690,19 @@ export default function MayarMonitor() {
       }
     >
       {settings.scanlines && <div className="scanlines" />}
-      <div className="glow-top" />
+      {settings.theme === "dither" ? (
+        <DitherGradient
+          from={settings.ditherHue}
+          to="transparent"
+          direction="up"
+          cell={4}
+          opacity={0.32}
+          bloom="low"
+          style={{ position: "fixed", zIndex: 1 }}
+        />
+      ) : (
+        <div className="glow-top" />
+      )}
       <div className="vignette" />
 
       {/* ===================== SETUP ===================== */}
@@ -882,22 +911,61 @@ export default function MayarMonitor() {
             <div className="settings-panel">
               <div className="settings-title">TWEAKS</div>
               <div className="settings-row">
-                <span>ACCENT</span>
-                <span className="accent-swatches">
-                  {Object.entries(ACCENTS).map(([name, color]) => (
+                <span>THEME</span>
+                <span className="theme-toggle">
+                  {(["crt", "dither"] as Theme[]).map((th) => (
                     <button
-                      key={name}
-                      title={name}
+                      key={th}
                       className={
-                        "accent-swatch" +
-                        (settings.accent === name ? " active" : "")
+                        "theme-btn" + (settings.theme === th ? " active" : "")
                       }
-                      style={{ background: color }}
-                      onClick={() => updateSettings({ accent: name })}
-                    />
+                      onClick={() => updateSettings({ theme: th })}
+                    >
+                      {th.toUpperCase()}
+                    </button>
                   ))}
                 </span>
               </div>
+              {settings.theme === "crt" ? (
+                <div className="settings-row">
+                  <span>ACCENT</span>
+                  <span className="accent-swatches">
+                    {Object.entries(ACCENTS).map(([name, color]) => (
+                      <button
+                        key={name}
+                        title={name}
+                        className={
+                          "accent-swatch" +
+                          (settings.accent === name ? " active" : "")
+                        }
+                        style={{ background: color }}
+                        onClick={() => updateSettings({ accent: name })}
+                      />
+                    ))}
+                  </span>
+                </div>
+              ) : (
+                <div className="settings-row">
+                  <span>DITHER HUE</span>
+                  <span className="hue-control">
+                    <input
+                      className="hue-slider"
+                      type="range"
+                      min={0}
+                      max={360}
+                      value={settings.ditherHue}
+                      onChange={(e) =>
+                        updateSettings({ ditherHue: Number(e.target.value) })
+                      }
+                    />
+                    <span
+                      className="hue-swatch"
+                      style={{ background: ditherAccent(settings.ditherHue) }}
+                      title={`hue ${settings.ditherHue}°`}
+                    />
+                  </span>
+                </div>
+              )}
               <div className="settings-row">
                 <span>REFRESH (S)</span>
                 <input

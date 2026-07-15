@@ -12,7 +12,8 @@ A CRT-style big-screen dashboard for monitoring [Mayar](https://mayar.id) transa
 - `LIVE / DEMO / SYNC / OFFLINE` status badge, WIB clock
 - **First-run setup** — paste your Mayar API key; it's stored only in the browser's localStorage
 - **Demo mode** — explore with simulated data, no key needed
-- **Tweaks panel** — accent color (Phosphor Green / Amber / Cyan / Mayar Blue), refresh interval, scanlines, compact numbers, ticker on/off
+- **Two themes** — the default **CRT** (smooth phosphor glow) and **Dither**, an ordered-dither pixel wash powered by [dither-kit](https://www.tripwire.sh/dither-kit); the Dither theme has a full **hue slider (0–360°)** that recolors the background, numbers, bars, and ticker together
+- **Tweaks panel** — theme, accent color (Phosphor Green / Amber / Cyan / Mayar Blue) or dither hue, refresh interval, scanlines, compact numbers, ticker on/off
 
 ## How it works
 

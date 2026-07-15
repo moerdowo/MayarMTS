@@ -714,8 +714,61 @@ input::placeholder {
 }
 
 .settings-check {
-  accent-color: #2dff8a;
+  accent-color: var(--acc, #2dff8a);
   width: 15px;
   height: 15px;
   cursor: pointer;
+}
+
+.theme-toggle {
+  display: flex;
+  gap: 6px;
+}
+
+.theme-btn {
+  background: #080d0b;
+  border: 1px solid #1d2f26;
+  color: #6f8d7e;
+  font-family: var(--font-mono), monospace;
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  padding: 4px 9px;
+  cursor: pointer;
+}
+
+.theme-btn.active {
+  border-color: var(--acc, #2dff8a);
+  color: var(--acc, #2dff8a);
+  text-shadow: 0 0 8px color-mix(in srgb, var(--acc, #2dff8a) 55%, transparent);
+}
+
+.hue-control {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+}
+
+.hue-slider {
+  width: 120px;
+  height: 6px;
+  cursor: pointer;
+  accent-color: var(--acc, #2dff8a);
+  background: linear-gradient(
+    to right,
+    hsl(0, 85%, 58%),
+    hsl(60, 85%, 58%),
+    hsl(120, 85%, 58%),
+    hsl(180, 85%, 58%),
+    hsl(240, 85%, 58%),
+    hsl(300, 85%, 58%),
+    hsl(360, 85%, 58%)
+  );
+  border-radius: 3px;
+}
+
+.hue-swatch {
+  width: 18px;
+  height: 18px;
+  border: 1px solid #1d2f26;
+  box-shadow: 0 0 8px color-mix(in srgb, var(--acc, #2dff8a) 50%, transparent);
 }
