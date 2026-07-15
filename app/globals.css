@@ -378,6 +378,18 @@ input::placeholder {
   color: #eef8f1;
 }
 
+/* The Dither theme's colour wash brightens the lower half of the screen,
+   swallowing the darkest muted tokens (#3c4f45). Lift them so the ticker
+   timestamps, panel hints, and footer status stay legible over the wash. */
+.theme-dither .ticker-time,
+.theme-dither .panel-hint,
+.theme-dither .ticker-empty,
+.theme-dither .footer-status,
+.theme-dither .btn-ghost,
+.theme-dither .header-right .sub {
+  color: #9ab9ab;
+}
+
 /* hero */
 
 .hero {

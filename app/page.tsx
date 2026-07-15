@@ -681,7 +681,7 @@ export default function MayarMonitor() {
 
   return (
     <div
-      className="crt-root"
+      className={"crt-root" + (settings.theme === "dither" ? " theme-dither" : "")}
       style={
         {
           "--acc": accentColor,
